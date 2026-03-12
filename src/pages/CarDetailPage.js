@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { carService, bookingService, feedbackService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import '../styles/CarDetailPage.css';
 
 const CarDetailPage = () => {
@@ -11,7 +13,7 @@ const CarDetailPage = () => {
   const [car, setCar] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [booking, setBooking] = useState({ startDate: '', endDate: '', bookingType: 'DAY' });
+  const [booking, setBooking] = useState({ startDate: null, endDate: null, bookingType: 'DAY' });
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
 
@@ -51,7 +53,7 @@ const CarDetailPage = () => {
       return;
     }
 
-    if (new Date(booking.endDate) <= new Date(booking.startDate)) {
+    if (booking.endDate <= booking.startDate) {
       setBookingError('Ngày kết thúc phải sau ngày bắt đầu');
       return;
     }
@@ -59,16 +61,37 @@ const CarDetailPage = () => {
     try {
       await bookingService.createBooking({
         carId: parseInt(id),
-        startDate: booking.startDate,
-        endDate: booking.endDate,
+        startDate: booking.startDate.toISOString(),
+        endDate: booking.endDate.toISOString(),
         bookingType: booking.bookingType,
       });
       setBookingSuccess('Đặt xe thành công! Vui lòng thanh toán trong 30 phút.');
-      setBooking({ startDate: '', endDate: '', bookingType: 'DAY' });
+      setBooking({ startDate: null, endDate: null, bookingType: 'DAY' });
     } catch (err) {
       setBookingError(err.response?.data?.message || 'Đặt xe thất bại');
     }
   };
+
+  const calculateTotalPrice = () => {
+    if (!booking.startDate || !booking.endDate || !car) return null;
+    const start = booking.startDate;
+    const end = booking.endDate;
+    if (end <= start) return null;
+
+    const diffMs = end - start;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = diffHours / 24;
+    const diffMonths = diffDays / 30;
+
+    let total = 0;
+    if (booking.bookingType === 'HOUR') total = diffHours * (car.priceHour || 0);
+    else if (booking.bookingType === 'DAY') total = diffDays * (car.priceDay || 0);
+    else if (booking.bookingType === 'MONTH') total = diffMonths * (car.priceMonth || 0);
+
+    return Math.round(total);
+  };
+
+  const totalPrice = calculateTotalPrice();
 
   if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
   if (!car) return <div className="error-state">Không tìm thấy xe</div>;
@@ -84,10 +107,10 @@ const CarDetailPage = () => {
               alt={car.name}
             />
           </div>
-          {car.imageUrls?.length > 1 && (
+          {car.imageUrls?.length > 0 && (
             <div className="image-thumbnails">
-              {car.imageUrls.slice(1).map((url, i) => (
-                <img key={i} src={url} alt={`${car.name} ${i + 2}`} />
+              {car.imageUrls.map((url, i) => (
+                <img key={i} src={url} alt={`${car.name} ${i + 1}`} />
               ))}
             </div>
           )}
@@ -123,34 +146,88 @@ const CarDetailPage = () => {
             </div>
           </div>
 
-          {/* Booking Form */}
+          {/* Booking Card */}
           <div className="booking-section">
-            <h3>🚗 Đặt xe ngay</h3>
-            {bookingError && <div className="alert-error">{bookingError}</div>}
-            {bookingSuccess && <div className="alert-success">{bookingSuccess}</div>}
+            <h3>✨ Đặt xe ngay</h3>
+            <div className="booking-type-tabs">
+              <button 
+                type="button"
+                className={`type-tab ${booking.bookingType === 'HOUR' ? 'active' : ''}`}
+                onClick={() => setBooking({...booking, bookingType: 'HOUR'})}
+              >
+                🕒 Theo giờ
+              </button>
+              <button 
+                type="button"
+                className={`type-tab ${booking.bookingType === 'DAY' ? 'active' : ''}`}
+                onClick={() => setBooking({...booking, bookingType: 'DAY'})}
+              >
+                ☀️ Theo ngày
+              </button>
+              <button 
+                type="button"
+                className={`type-tab ${booking.bookingType === 'MONTH' ? 'active' : ''}`}
+                onClick={() => setBooking({...booking, bookingType: 'MONTH'})}
+              >
+                📅 Theo tháng
+              </button>
+            </div>
+
+            {bookingError && <div className="alert-error" style={{marginBottom: '15px'}}>{bookingError}</div>}
+            {bookingSuccess && <div className="alert-success" style={{marginBottom: '15px'}}>{bookingSuccess}</div>}
+
             <form onSubmit={handleBooking} className="booking-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Loại thuê</label>
-                  <select value={booking.bookingType} onChange={(e) => setBooking({...booking, bookingType: e.target.value})}>
-                    <option value="HOUR">Theo giờ</option>
-                    <option value="DAY">Theo ngày</option>
-                    <option value="MONTH">Theo tháng</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
+              <div className="date-inputs">
                 <div className="form-group">
                   <label>Ngày bắt đầu</label>
-                  <input type="datetime-local" value={booking.startDate} onChange={(e) => setBooking({...booking, startDate: e.target.value})} required />
+                  <DatePicker 
+                    selected={booking.startDate}
+                    onChange={(date) => setBooking({...booking, startDate: date})}
+                    showTimeSelect
+                    dateFormat="dd/MM/yyyy HH:mm"
+                    placeholderText="Chọn ngày bắt đầu"
+                    className="datepicker-input"
+                    required
+                  />
                 </div>
                 <div className="form-group">
                   <label>Ngày kết thúc</label>
-                  <input type="datetime-local" value={booking.endDate} onChange={(e) => setBooking({...booking, endDate: e.target.value})} min={booking.startDate} required />
+                  <DatePicker 
+                    selected={booking.endDate}
+                    onChange={(date) => setBooking({...booking, endDate: date})}
+                    showTimeSelect
+                    dateFormat="dd/MM/yyyy HH:mm"
+                    minDate={booking.startDate}
+                    placeholderText="Chọn ngày kết thúc"
+                    className="datepicker-input"
+                    required
+                  />
                 </div>
               </div>
+
+              {totalPrice > 0 && (
+                <div className="booking-total-estimate">
+                  <div className="estimate-row">
+                    <span className="estimate-label">Đơn giá</span>
+                    <span className="estimate-value">
+                      {booking.bookingType === 'HOUR' ? Number(car.priceHour).toLocaleString('vi-VN') : 
+                       booking.bookingType === 'DAY' ? Number(car.priceDay).toLocaleString('vi-VN') : 
+                       Number(car.priceMonth).toLocaleString('vi-VN')}đ / {
+                         booking.bookingType === 'HOUR' ? 'giờ' : 
+                         booking.bookingType === 'DAY' ? 'ngày' : 'tháng'
+                       }
+                    </span>
+                  </div>
+                  <div className="estimate-row total-row">
+                    <span className="total-label">Tổng cộng tạm tính</span>
+                    <span className="total-value">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                </div>
+              )}
+
               <button type="submit" className="btn-book">
-                {isAuthenticated() ? 'Đặt xe' : 'Đăng nhập để đặt xe'}
+                <span>{isAuthenticated() ? 'Xác nhận đặt xe' : 'Đăng nhập để đặt xe'}</span>
+                {isAuthenticated() && <span style={{fontSize: '20px'}}>→</span>}
               </button>
             </form>
           </div>
