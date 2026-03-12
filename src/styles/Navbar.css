@@ -1,0 +1,100 @@
+.navbar-main {
+  background: rgba(15, 17, 23, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 24px;
+}
+
+.navbar-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+}
+
+.brand-icon { font-size: 24px; }
+
+.brand-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.navbar-links { display: flex; gap: 4px; }
+
+.nav-link {
+  color: var(--text-secondary) !important;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.nav-link:hover { color: var(--text-primary) !important; background: var(--bg-card); }
+
+.navbar-auth { display: flex; align-items: center; gap: 12px; }
+
+.user-menu { display: flex; align-items: center; gap: 12px; }
+
+.user-greeting { font-size: 14px; color: var(--text-secondary); }
+
+.user-role-badge {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+.auth-buttons { display: flex; gap: 8px; }
+
+.btn-login {
+  color: var(--text-secondary) !important;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-login:hover { color: var(--text-primary) !important; }
+
+.btn-register {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white !important;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-register:hover { box-shadow: 0 4px 20px rgba(67, 97, 238, 0.4); }

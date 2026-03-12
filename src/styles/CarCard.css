@@ -1,0 +1,43 @@
+.car-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.car-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 8px 30px rgba(67, 97, 238, 0.15); }
+
+.car-card-image { position: relative; overflow: hidden; height: 200px; }
+.car-card-image img { width: 100%; height: 100%; object-fit: cover; transition: var(--transition); }
+.car-card:hover .car-card-image img { transform: scale(1.05); }
+
+.car-status-badge {
+  position: absolute; top: 12px; right: 12px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  background: rgba(6, 214, 160, 0.2); color: var(--success);
+}
+
+.car-card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.car-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.car-name { font-size: 16px; font-weight: 600; }
+.car-brand { font-size: 12px; color: var(--primary-light); font-weight: 500; background: rgba(67, 97, 238, 0.1); padding: 2px 8px; border-radius: 4px; }
+
+.car-info-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.car-info-item { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+
+.car-rating { font-size: 14px; color: var(--warning); }
+.rating-count { color: var(--text-muted); font-size: 12px; margin-left: 4px; }
+
+.car-card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border); }
+.car-price { display: flex; align-items: baseline; gap: 4px; }
+.price-value { font-size: 18px; font-weight: 700; color: var(--primary-light); }
+.price-unit { font-size: 12px; color: var(--text-muted); }
+
+.btn-detail {
+  color: var(--primary-light) !important; font-size: 13px; font-weight: 600;
+  padding: 6px 14px; border-radius: 6px; background: rgba(67, 97, 238, 0.1); transition: var(--transition);
+}
+.btn-detail:hover { background: rgba(67, 97, 238, 0.2); }
