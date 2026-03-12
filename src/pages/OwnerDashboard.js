@@ -13,6 +13,7 @@ const OwnerDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingCar, setEditingCar] = useState(null);
   const [message, setMessage] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [carForm, setCarForm] = useState({
     name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
     description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: []
@@ -23,17 +24,37 @@ const OwnerDashboard = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [carsRes, bookingsRes, revenueRes, brandsRes, catsRes] = await Promise.all([
-        ownerService.getMyCars(), ownerService.getMyBookings(), ownerService.getRevenue(),
-        brandService.getAllBrands(), categoryService.getAllCategories()
+      
+      // Helper function to handle individual service calls safely
+      const safeCall = async (serviceMethod, defaultValue = []) => {
+        try {
+          const res = await serviceMethod();
+          return res.data;
+        } catch (err) {
+          console.error(`Error fetching data:`, err);
+          return defaultValue;
+        }
+      };
+
+      const [carsData, bookingsData, revenueData, brandsData, catsData] = await Promise.all([
+        safeCall(() => ownerService.getMyCars()),
+        safeCall(() => ownerService.getMyBookings()),
+        safeCall(() => ownerService.getRevenue(), {}),
+        safeCall(() => brandService.getAllBrands()),
+        safeCall(() => categoryService.getAllCategories())
       ]);
-      setCars(carsRes.data);
-      setBookings(bookingsRes.data);
-      setRevenue(revenueRes.data);
-      setBrands(brandsRes.data);
-      setCategories(catsRes.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+
+      setCars(carsData);
+      setBookings(bookingsData);
+      setRevenue(revenueData);
+      setBrands(brandsData);
+      setCategories(catsData);
+    } catch (err) {
+      console.error('Critical error in loadData:', err);
+      setMessage('Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCarSubmit = async (e) => {
@@ -100,6 +121,22 @@ const OwnerDashboard = () => {
   const resetForm = () => {
     setCarForm({ name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
       description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: [] });
+    setImageUrlInput('');
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim()) return;
+    setCarForm({
+      ...carForm,
+      imageUrls: [...carForm.imageUrls, imageUrlInput.trim()]
+    });
+    setImageUrlInput('');
+  };
+
+  const handleRemoveImageUrl = (index) => {
+    const newUrls = [...carForm.imageUrls];
+    newUrls.splice(index, 1);
+    setCarForm({ ...carForm, imageUrls: newUrls });
   };
 
   if (loading) return <div className="loading-spinner"><div className="spinner"></div></div>;
@@ -220,6 +257,28 @@ const OwnerDashboard = () => {
                 <div className="form-group"><label>Giá/giờ</label><input type="number" value={carForm.priceHour} onChange={e => setCarForm({...carForm, priceHour: e.target.value})} /></div>
                 <div className="form-group"><label>Giá/ngày</label><input type="number" value={carForm.priceDay} onChange={e => setCarForm({...carForm, priceDay: e.target.value})} /></div>
                 <div className="form-group"><label>Giá/tháng</label><input type="number" value={carForm.priceMonth} onChange={e => setCarForm({...carForm, priceMonth: e.target.value})} /></div>
+              </div>
+
+              <div className="form-group image-management">
+                <label>Ảnh xe (URL)</label>
+                <div className="image-input-row">
+                  <input 
+                    placeholder="Dán link ảnh tại đây..." 
+                    value={imageUrlInput} 
+                    onChange={e => setImageUrlInput(e.target.value)}
+                  />
+                  <button type="button" className="btn-sm btn-primary" onClick={handleAddImageUrl}>+ Thêm</button>
+                </div>
+                {carForm.imageUrls.length > 0 && (
+                  <div className="image-preview-grid">
+                    {carForm.imageUrls.map((url, index) => (
+                      <div key={index} className="preview-item">
+                        <img src={url} alt="Car preview" onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=Invalid+URL'} />
+                        <button type="button" className="remove-btn" onClick={() => handleRemoveImageUrl(index)}>&times;</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Hủy</button>
