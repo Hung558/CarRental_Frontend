@@ -9,6 +9,8 @@ export const carService = {
   searchCars: (params) => api.get('/cars/search', { params }),
   getAllCars: () => api.get('/cars'),
   getCarById: (id) => api.get(`/cars/${id}`),
+  getCarSchedules: (id) => api.get(`/cars/${id}/schedules`),
+  getCarBookedDates: (id) => api.get(`/cars/${id}/booked-dates`),
   createCar: (data) => api.post('/cars', data),
   updateCar: (id, data) => api.put(`/cars/${id}`, data),
   deleteCar: (id) => api.delete(`/cars/${id}`),
@@ -33,6 +35,8 @@ export const feedbackService = {
 export const paymentService = {
   processPayment: (data) => api.post('/payments', data),
   getPaymentByBookingId: (bookingId) => api.get(`/payments/booking/${bookingId}`),
+  getVNPayUrl: (bookingId) => api.get(`/payments/vnpay-url/${bookingId}`),
+  verifyVNPay: (data) => api.post('/payments/vnpay-verify', data),
 };
 
 export const ownerService = {
@@ -42,6 +46,7 @@ export const ownerService = {
   addSchedule: (carId, data) => api.post(`/owner/cars/${carId}/schedules`, data),
   getSchedules: (carId) => api.get(`/owner/cars/${carId}/schedules`),
   deleteSchedule: (scheduleId) => api.delete(`/owner/schedules/${scheduleId}`),
+  handoverBooking: (bookingId) => api.post(`/owner/bookings/${bookingId}/handover`),
 };
 
 export const brandService = {

@@ -99,61 +99,145 @@
   width: 100%;
 }
 
-.react-datepicker {
-  background-color: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
-  font-family: inherit !important;
+/* Cleaned up DatePicker Styling */
+.ReactModal__Overlay {
+  z-index: 2000 !important;
 }
 
-.react-datepicker__header, 
-.react-datepicker__time-header, 
-.react-datepicker-time__header,
-.react-datepicker__current-month, 
-.react-datepicker__day-name, 
-.react-datepicker__time-name {
-  background-color: var(--bg-surface) !important;
-  color: var(--text-primary) !important;
+/* Availability Schedule */
+.car-availability-schedule {
+  background: var(--bg-surface, #ffffff);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.car-availability-schedule h3 {
+  margin-bottom: 15px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  margin-top: 0;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.schedule-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #fdf2f2;
+  border-left: 4px solid #ff6b6b;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.schedule-time {
+  color: #c92a2a;
+  font-weight: 500;
+}
+
+.schedule-status-badge {
+  background: #ff6b6b;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.datepicker-input {
+  width: 100% !important;
+  padding: 14px !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+}
+
+.react-datepicker {
+  background-color: #1a1d2e !important;
+  color: #fff !important;
+  border: 1px solid #2a2d42 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.react-datepicker__header {
+  background-color: #141625 !important;
+  border-bottom: 1px solid #2a2d42 !important;
+}
+
+.react-datepicker__current-month, .react-datepicker__day-name, .react-datepicker__time-name {
+  color: #fff !important;
 }
 
 .react-datepicker__day {
-  color: var(--text-secondary) !important;
+  color: #f0f0f5 !important;
 }
 
 .react-datepicker__day:hover {
-  background-color: var(--primary) !important;
-  color: white !important;
-  border-radius: 8px !important;
+  background-color: #4361ee !important;
+  border-radius: 4px;
 }
 
-.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
-  background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
-  color: white !important;
-  border-radius: 8px !important;
+.react-datepicker__day--selected {
+  background-color: #7209b7 !important;
+  color: #fff !important;
+  border-radius: 4px;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: transparent !important;
 }
 
 .react-datepicker__time-container {
-  border-left: 1px solid var(--border) !important;
-  background-color: var(--bg-card) !important;
-  color: var(--text-primary) !important;
+  border-left: 1px solid #2a2d42 !important;
+  width: 90px !important;
+  background-color: #1a1d2e !important;
 }
 
 .react-datepicker__time-box {
-  background-color: var(--bg-card) !important;
+  width: 90px !important;
+  background-color: #1a1d2e !important;
 }
 
 .react-datepicker__time-list-item {
-  color: var(--text-secondary) !important;
+  color: #f0f0f5 !important;
+  padding: 8px 5px !important;
+  cursor: pointer !important;
   background-color: transparent !important;
 }
 
 .react-datepicker__time-list-item:hover {
-  background-color: var(--primary) !important;
-  color: white !important;
+  background-color: #4361ee !important;
 }
 
 .react-datepicker__time-list-item--selected {
-  background-color: var(--primary) !important;
-  color: white !important;
+  background-color: #7209b7 !important;
+  color: #fff !important;
+  font-weight: bold !important;
 }

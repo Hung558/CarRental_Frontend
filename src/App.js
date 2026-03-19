@@ -10,6 +10,7 @@ import CarDetailPage from './pages/CarDetailPage';
 import CustomerDashboard from './pages/CustomerDashboard';
 import OwnerDashboard from './pages/OwnerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import PaymentResult from './pages/PaymentResult';
 
 function App() {
   return (
@@ -34,9 +35,8 @@ function App() {
           } />
 
           {/* Admin */}
-          <Route path="/admin/dashboard" element={
-            <PrivateRoute roles={['ADMIN']}><AdminDashboard /></PrivateRoute>
-          } />
+          <Route path="/admin" element={<PrivateRoute roles={['ADMIN']}><AdminDashboard /></PrivateRoute>} />
+          <Route path="/payment-result" element={<PrivateRoute roles={['CUSTOMER']}><PaymentResult /></PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
