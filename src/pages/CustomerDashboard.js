@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { bookingService, paymentService, feedbackService } from '../services/dataService';
 import '../styles/Dashboard.css';
 
 const CustomerDashboard = () => {
+  const location = useLocation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedbackForm, setFeedbackForm] = useState({ bookingId: null, rating: 5, comment: '' });
   const [showFeedback, setShowFeedback] = useState(false);
   const [extendForm, setExtendForm] = useState({ bookingId: null, newEndDate: '' });
   const [showExtend, setShowExtend] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(location.state?.message || '');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterDate, setFilterDate] = useState('');
 
   useEffect(() => { loadBookings(); }, []);
 
@@ -32,11 +36,19 @@ const CustomerDashboard = () => {
   };
 
   const handlePayment = async (bookingId) => {
+    console.log("Handle payment clicked for ID:", bookingId);
     try {
-      await paymentService.processPayment({ bookingId, paymentMethod: 'BANK_TRANSFER' });
-      setMessage('Thanh toán thành công!');
-      loadBookings();
-    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi thanh toán'); }
+      const res = await paymentService.getVNPayUrl(bookingId);
+      console.log("VNPay URL response:", res.data);
+      if (res.data.url) {
+        window.location.href = res.data.url;
+      } else {
+        setMessage('Không nhận được liên kết thanh toán từ máy chủ');
+      }
+    } catch (err) { 
+      console.error("Payment error:", err);
+      setMessage(err.response?.data?.message || 'Lỗi khởi tạo thanh toán'); 
+    }
   };
 
   const handleFeedback = async (e) => {
@@ -62,7 +74,7 @@ const CustomerDashboard = () => {
   };
 
   const getStatusClass = (status) => {
-    const map = { PENDING: 'status-pending', CONFIRMED: 'status-confirmed', COMPLETED: 'status-completed', CANCELLED: 'status-cancelled' };
+    const map = { PENDING_PAYMENT: 'status-pending_payment', CONFIRMED: 'status-confirmed', IN_PROGRESS: 'status-in_progress', COMPLETED: 'status-completed', CANCELLED: 'status-cancelled' };
     return map[status] || '';
   };
 
@@ -78,6 +90,52 @@ const CustomerDashboard = () => {
       {bookings.length === 0 ? (
         <div className="empty-state"><span className="empty-icon">📭</span><p>Bạn chưa có đơn đặt xe nào</p></div>
       ) : (
+        <>
+          {/* Filter Bar (UC10 Step 3) */}
+          <div style={{display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+              <label style={{fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap'}}>Trạng thái:</label>
+              <select 
+                value={filterStatus} 
+                onChange={e => setFilterStatus(e.target.value)}
+                style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border, #ddd)', fontSize: '13px'}}
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="PENDING_PAYMENT">Chờ thanh toán</option>
+                <option value="CONFIRMED">Đã duyệt</option>
+                <option value="IN_PROGRESS">Đang dùng</option>
+                <option value="COMPLETED">Hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
+                <option value="REJECTED">Từ chối</option>
+              </select>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+              <label style={{fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap'}}>Ngày thuê:</label>
+              <input 
+                type="date" 
+                value={filterDate} 
+                onChange={e => setFilterDate(e.target.value)}
+                style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border, #ddd)', fontSize: '13px'}}
+              />
+              {filterDate && (
+                <button 
+                  type="button" 
+                  onClick={() => setFilterDate('')} 
+                  style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#888'}}
+                >✕</button>
+              )}
+            </div>
+            <span style={{fontSize: '12px', color: '#888'}}>
+              Hiển thị {bookings.filter(b => {
+                const matchStatus = filterStatus === 'ALL' || b.status === filterStatus;
+                const matchDate = !filterDate || (
+                  new Date(b.startDate).toISOString().slice(0,10) <= filterDate && 
+                  new Date(b.endDate).toISOString().slice(0,10) >= filterDate
+                );
+                return matchStatus && matchDate;
+              }).length} / {bookings.length} đơn
+            </span>
+          </div>
         <div className="bookings-table-wrapper">
           <table className="data-table">
             <thead>
@@ -87,7 +145,14 @@ const CustomerDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b, i) => (
+              {bookings.filter(b => {
+                const matchStatus = filterStatus === 'ALL' || b.status === filterStatus;
+                const matchDate = !filterDate || (
+                  new Date(b.startDate).toISOString().slice(0,10) <= filterDate && 
+                  new Date(b.endDate).toISOString().slice(0,10) >= filterDate
+                );
+                return matchStatus && matchDate;
+              }).map((b, i) => (
                 <tr key={b.bookingId}>
                   <td>{i + 1}</td>
                   <td><strong>{b.carName}</strong><br/><small>{b.brandName}</small></td>
@@ -98,18 +163,15 @@ const CustomerDashboard = () => {
                   <td><span className={`status-badge ${getStatusClass(b.status)}`}>{b.status}</span></td>
                   <td><span className={`status-badge ${b.paymentStatus === 'COMPLETED' ? 'status-completed' : 'status-pending'}`}>{b.paymentStatus}</span></td>
                   <td className="actions-cell">
-                    {b.status === 'PENDING' && (
-                      <>
-                        <button className="btn-sm btn-success" onClick={() => handlePayment(b.bookingId)}>Thanh toán</button>
-                        <button className="btn-sm btn-primary" onClick={() => { setExtendForm({ bookingId: b.bookingId, newEndDate: '' }); setShowExtend(true); }}>Gia hạn</button>
-                        <button className="btn-sm btn-danger" onClick={() => handleCancel(b.bookingId)}>Hủy</button>
-                      </>
+                    {((b.status?.trim().toUpperCase() === 'PENDING_PAYMENT') || 
+                      (b.status?.trim().toUpperCase() === 'CONFIRMED' && b.paymentStatus?.trim().toUpperCase() === 'NOT_PAID')) && (
+                      <button className="btn-sm btn-success" style={{cursor: 'pointer', zIndex: 10}} onClick={() => handlePayment(b.bookingId)}>Thanh toán</button>
                     )}
-                    {b.status === 'CONFIRMED' && (
-                      <>
-                        <button className="btn-sm btn-primary" onClick={() => { setExtendForm({ bookingId: b.bookingId, newEndDate: '' }); setShowExtend(true); }}>Gia hạn</button>
-                        <button className="btn-sm btn-danger" onClick={() => handleCancel(b.bookingId)}>Hủy</button>
-                      </>
+                    {['PENDING_PAYMENT', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status?.trim().toUpperCase()) && (
+                      <button className="btn-sm btn-primary" style={{cursor: 'pointer', zIndex: 10}} onClick={() => { setExtendForm({ bookingId: b.bookingId, newEndDate: '' }); setShowExtend(true); }}>Gia hạn</button>
+                    )}
+                    {['PENDING_PAYMENT', 'CONFIRMED'].includes(b.status?.trim().toUpperCase()) && (
+                      <button className="btn-sm btn-danger" style={{cursor: 'pointer', zIndex: 10}} onClick={() => handleCancel(b.bookingId)}>Hủy</button>
                     )}
                     {b.status === 'COMPLETED' && b.paymentStatus !== 'NOT_PAID' && !b.hasFeedback && (
                       <button className="btn-sm btn-primary" onClick={() => { setFeedbackForm({...feedbackForm, bookingId: b.bookingId}); setShowFeedback(true); }}>Đánh giá</button>
@@ -123,6 +185,7 @@ const CustomerDashboard = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Feedback Modal */}

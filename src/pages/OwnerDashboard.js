@@ -25,6 +25,7 @@ const OwnerDashboard = () => {
   const [showSchedule, setShowSchedule] = useState(false);
   const [currentCarSchedules, setCurrentCarSchedules] = useState([]);
   const [scheduleForm, setScheduleForm] = useState({ startDate: '', endDate: '' });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => { loadData(); }, []);
 
@@ -64,8 +65,42 @@ const OwnerDashboard = () => {
     }
   };
 
+  const validateCarForm = () => {
+    const errors = {};
+    if (!carForm.name.trim()) errors.name = 'Tên xe không được để trống';
+    else if (carForm.name.trim().length < 2) errors.name = 'Tên xe phải có ít nhất 2 ký tự';
+
+    if (!carForm.licensePlate.trim()) errors.licensePlate = 'Biển số không được để trống';
+    else if (!/^[0-9]{2}[A-Z]{1,2}[- ]?[0-9]{4,5}$/i.test(carForm.licensePlate.trim())) {
+      errors.licensePlate = 'Biển số không hợp lệ (VD: 51F-12345 hoặc 30A1234)';
+    }
+
+    if (!carForm.brandId) errors.brandId = 'Vui lòng chọn hãng xe';
+    if (!carForm.categoryId) errors.categoryId = 'Vui lòng chọn loại xe';
+
+    if (carForm.year) {
+      const y = parseInt(carForm.year);
+      if (isNaN(y) || y < 1900 || y > new Date().getFullYear() + 1) {
+        errors.year = `Năm SX phải từ 1900 đến ${new Date().getFullYear() + 1}`;
+      }
+    }
+
+    const hasPrice = (carForm.priceHour && parseFloat(carForm.priceHour) > 0) ||
+                     (carForm.priceDay && parseFloat(carForm.priceDay) > 0) ||
+                     (carForm.priceMonth && parseFloat(carForm.priceMonth) > 0);
+    if (!hasPrice) errors.price = 'Phải nhập ít nhất 1 loại giá (> 0)';
+
+    if (carForm.priceHour && parseFloat(carForm.priceHour) < 0) errors.priceHour = 'Giá không được âm';
+    if (carForm.priceDay && parseFloat(carForm.priceDay) < 0) errors.priceDay = 'Giá không được âm';
+    if (carForm.priceMonth && parseFloat(carForm.priceMonth) < 0) errors.priceMonth = 'Giá không được âm';
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCarSubmit = async (e) => {
     e.preventDefault();
+    if (!validateCarForm()) return;
     try {
       const data = { ...carForm, brandId: parseInt(carForm.brandId), categoryId: parseInt(carForm.categoryId),
         year: carForm.year ? parseInt(carForm.year) : null,
@@ -83,6 +118,7 @@ const OwnerDashboard = () => {
       setShowForm(false);
       setEditingCar(null);
       resetForm();
+      setFormErrors({});
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi xử lý'); }
   };
@@ -110,9 +146,17 @@ const OwnerDashboard = () => {
   const handleConfirm = async (bookingId) => {
     try {
       await bookingService.confirmBooking(bookingId);
-      setMessage('Xác nhận đơn thành công');
+      setMessage('Duyệt đơn thành công');
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+  };
+
+  const handleHandover = async (bookingId) => {
+    try {
+      await ownerService.handoverBooking(bookingId);
+      setMessage('Xác nhận giao xe thành công');
+      loadData();
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi giao xe'); }
   };
 
   const handleComplete = async (bookingId) => {
@@ -154,6 +198,25 @@ const OwnerDashboard = () => {
 
   const handleAddSchedule = async (e) => {
     e.preventDefault();
+    // Frontend validation
+    const start = new Date(scheduleForm.startDate);
+    const end = new Date(scheduleForm.endDate);
+    if (end <= start) {
+      setMessage('Ngày kết thúc phải sau ngày bắt đầu');
+      return;
+    }
+    if (start < new Date()) {
+      setMessage('Không thể khoá lịch cho thời gian đã qua');
+      return;
+    }
+    // Check overlap with existing schedules
+    const overlap = currentCarSchedules.find(s => 
+      start < new Date(s.endDate) && end > new Date(s.startDate)
+    );
+    if (overlap) {
+      setMessage('Khoảng thời gian bị trùng với lịch hiện tại!');
+      return;
+    }
     try {
       await ownerService.addSchedule(editingCar.carId, scheduleForm);
       setMessage('Thêm lịch thành công');
@@ -265,13 +328,21 @@ const OwnerDashboard = () => {
                     <td className="price-cell">{Number(b.totalPrice).toLocaleString('vi-VN')}đ</td>
                     <td><span className={`status-badge status-${b.status.toLowerCase()}`}>{b.status}</span></td>
                     <td className="actions-cell">
-                      {b.status === 'PENDING' && (
+                      {b.status === 'PENDING_PAYMENT' && (
                         <>
-                          <button className="btn-sm btn-success" onClick={() => handleConfirm(b.bookingId)}>Xác nhận</button>
+                          <button className="btn-sm btn-success" onClick={() => handleConfirm(b.bookingId)}>Duyệt đơn</button>
                           <button className="btn-sm btn-danger" onClick={() => handleReject(b.bookingId)}>Từ chối</button>
                         </>
                       )}
-                      {b.status === 'CONFIRMED' && <button className="btn-sm btn-primary" onClick={() => handleComplete(b.bookingId)}>Hoàn thành</button>}
+                      {b.status === 'CONFIRMED' && b.paymentStatus === 'COMPLETED' && (
+                          <button className="btn-sm btn-success" onClick={() => handleHandover(b.bookingId)}>Giao xe</button>
+                      )}
+                      {b.status === 'CONFIRMED' && b.paymentStatus !== 'COMPLETED' && (
+                          <span style={{fontSize: '0.85rem', color: '#ff9800', fontWeight: 'bold'}}>Chờ thanh toán</span>
+                      )}
+                      {b.status === 'IN_PROGRESS' && (
+                          <button className="btn-sm btn-primary" onClick={() => handleComplete(b.bookingId)}>Hoàn thành</button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -309,26 +380,40 @@ const OwnerDashboard = () => {
             <h3>{editingCar ? 'Sửa xe' : 'Thêm xe mới'}</h3>
             <form onSubmit={handleCarSubmit}>
               <div className="form-row">
-                <div className="form-group"><label>Tên xe *</label><input value={carForm.name} onChange={e => setCarForm({...carForm, name: e.target.value})} required /></div>
-                <div className="form-group"><label>Biển số *</label><input value={carForm.licensePlate} onChange={e => setCarForm({...carForm, licensePlate: e.target.value})} required /></div>
+                <div className="form-group">
+                  <label>Tên xe *</label>
+                  <input value={carForm.name} onChange={e => setCarForm({...carForm, name: e.target.value})} />
+                  {formErrors.name && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.name}</span>}
+                </div>
+                <div className="form-group">
+                  <label>Biển số *</label>
+                  <input value={carForm.licensePlate} onChange={e => setCarForm({...carForm, licensePlate: e.target.value})} />
+                  {formErrors.licensePlate && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.licensePlate}</span>}
+                </div>
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Hãng xe *</label>
-                  <select value={carForm.brandId} onChange={e => setCarForm({...carForm, brandId: e.target.value})} required>
+                  <select value={carForm.brandId} onChange={e => setCarForm({...carForm, brandId: e.target.value})}>
                     <option value="">Chọn hãng</option>
                     {brands.map(b => <option key={b.brandId} value={b.brandId}>{b.name}</option>)}
                   </select>
+                  {formErrors.brandId && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.brandId}</span>}
                 </div>
                 <div className="form-group"><label>Loại xe *</label>
-                  <select value={carForm.categoryId} onChange={e => setCarForm({...carForm, categoryId: e.target.value})} required>
+                  <select value={carForm.categoryId} onChange={e => setCarForm({...carForm, categoryId: e.target.value})}>
                     <option value="">Chọn loại</option>
                     {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}
                   </select>
+                  {formErrors.categoryId && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.categoryId}</span>}
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Màu</label><input value={carForm.color} onChange={e => setCarForm({...carForm, color: e.target.value})} /></div>
-                <div className="form-group"><label>Năm SX</label><input type="number" value={carForm.year} onChange={e => setCarForm({...carForm, year: e.target.value})} /></div>
+                <div className="form-group">
+                  <label>Năm SX</label>
+                  <input type="number" value={carForm.year} onChange={e => setCarForm({...carForm, year: e.target.value})} />
+                  {formErrors.year && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.year}</span>}
+                </div>
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Thành phố</label><input value={carForm.locationCity} onChange={e => setCarForm({...carForm, locationCity: e.target.value})} /></div>
@@ -336,10 +421,23 @@ const OwnerDashboard = () => {
               </div>
               <div className="form-group"><label>Mô tả</label><textarea value={carForm.description} onChange={e => setCarForm({...carForm, description: e.target.value})} rows="3"></textarea></div>
               <div className="form-row">
-                <div className="form-group"><label>Giá/giờ</label><input type="number" value={carForm.priceHour} onChange={e => setCarForm({...carForm, priceHour: e.target.value})} /></div>
-                <div className="form-group"><label>Giá/ngày</label><input type="number" value={carForm.priceDay} onChange={e => setCarForm({...carForm, priceDay: e.target.value})} /></div>
-                <div className="form-group"><label>Giá/tháng</label><input type="number" value={carForm.priceMonth} onChange={e => setCarForm({...carForm, priceMonth: e.target.value})} /></div>
+                <div className="form-group">
+                  <label>Giá/giờ</label>
+                  <input type="number" value={carForm.priceHour} onChange={e => setCarForm({...carForm, priceHour: e.target.value})} />
+                  {formErrors.priceHour && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceHour}</span>}
+                </div>
+                <div className="form-group">
+                  <label>Giá/ngày</label>
+                  <input type="number" value={carForm.priceDay} onChange={e => setCarForm({...carForm, priceDay: e.target.value})} />
+                  {formErrors.priceDay && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceDay}</span>}
+                </div>
+                <div className="form-group">
+                  <label>Giá/tháng</label>
+                  <input type="number" value={carForm.priceMonth} onChange={e => setCarForm({...carForm, priceMonth: e.target.value})} />
+                  {formErrors.priceMonth && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceMonth}</span>}
+                </div>
               </div>
+              {formErrors.price && <div style={{color:'#ef476f',fontSize:'12px',marginBottom:'10px'}}>⚠️ {formErrors.price}</div>}
 
               <div className="form-group image-management">
                 <label>Ảnh xe (URL)</label>
