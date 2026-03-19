@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ownerService, carService, brandService, categoryService } from '../services/dataService';
+import { ownerService, carService, brandService, categoryService, bookingService } from '../services/dataService';
 import '../styles/Dashboard.css';
 
 const OwnerDashboard = () => {
@@ -18,6 +18,13 @@ const OwnerDashboard = () => {
     name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
     description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: []
   });
+  
+  const [offlineForm, setOfflineForm] = useState({
+    carId: '', customerName: '', customerPhone: '', startDate: '', endDate: ''
+  });
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [currentCarSchedules, setCurrentCarSchedules] = useState([]);
+  const [scheduleForm, setScheduleForm] = useState({ startDate: '', endDate: '' });
 
   useEffect(() => { loadData(); }, []);
 
@@ -102,8 +109,7 @@ const OwnerDashboard = () => {
 
   const handleConfirm = async (bookingId) => {
     try {
-      const { confirmBooking } = await import('../services/dataService').then(m => m.bookingService);
-      await confirmBooking(bookingId);
+      await bookingService.confirmBooking(bookingId);
       setMessage('Xác nhận đơn thành công');
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
@@ -111,12 +117,60 @@ const OwnerDashboard = () => {
 
   const handleComplete = async (bookingId) => {
     try {
-      const { completeBooking } = await import('../services/dataService').then(m => m.bookingService);
-      await completeBooking(bookingId);
+      await bookingService.completeBooking(bookingId);
       setMessage('Hoàn thành đơn thành công');
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
   };
+
+  const handleReject = async (bookingId) => {
+    if (!window.confirm('Từ chối đơn này?')) return;
+    try {
+      await bookingService.rejectBooking(bookingId);
+      setMessage('Từ chối đơn thành công');
+      loadData();
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+  };
+
+  const handleOfflineSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await bookingService.createOfflineBooking(offlineForm);
+      setMessage('Tạo đơn Offline thành công!');
+      setOfflineForm({ carId: '', customerName: '', customerPhone: '', startDate: '', endDate: '' });
+      setActiveTab('bookings');
+      loadData();
+    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi tạo đơn'); }
+  }
+
+  const handleManageSchedule = async (car) => {
+    setEditingCar(car);
+    try {
+      const res = await ownerService.getSchedules(car.carId);
+      setCurrentCarSchedules(res.data);
+      setShowSchedule(true);
+    } catch(err) { setMessage('Lỗi tải lịch'); }
+  }
+
+  const handleAddSchedule = async (e) => {
+    e.preventDefault();
+    try {
+      await ownerService.addSchedule(editingCar.carId, scheduleForm);
+      setMessage('Thêm lịch thành công');
+      setScheduleForm({startDate: '', endDate: ''});
+      const res = await ownerService.getSchedules(editingCar.carId);
+      setCurrentCarSchedules(res.data);
+    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+  }
+
+  const handleDeleteSchedule = async (id) => {
+    try {
+      await ownerService.deleteSchedule(id);
+      setMessage('Xóa lịch thành công');
+      const res = await ownerService.getSchedules(editingCar.carId);
+      setCurrentCarSchedules(res.data);
+    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+  }
 
   const resetForm = () => {
     setCarForm({ name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
@@ -161,6 +215,7 @@ const OwnerDashboard = () => {
       <div className="tab-nav">
         <button className={activeTab === 'cars' ? 'tab-active' : ''} onClick={() => setActiveTab('cars')}>🚗 Xe của tôi ({cars.length})</button>
         <button className={activeTab === 'bookings' ? 'tab-active' : ''} onClick={() => setActiveTab('bookings')}>📋 Đơn đặt ({bookings.length})</button>
+        <button className={activeTab === 'offline' ? 'tab-active' : ''} onClick={() => setActiveTab('offline')}>📝 Tạo đơn Offline</button>
       </div>
 
       {/* Cars Tab */}
@@ -183,6 +238,7 @@ const OwnerDashboard = () => {
                     <td><span className="status-badge status-confirmed">{car.status}</span></td>
                     <td className="actions-cell">
                       <button className="btn-sm btn-primary" onClick={() => handleEdit(car)}>Sửa</button>
+                      <button className="btn-sm btn-secondary" onClick={() => handleManageSchedule(car)}>Lịch</button>
                       <button className="btn-sm btn-danger" onClick={() => handleDelete(car.carId)}>Xóa</button>
                     </td>
                   </tr>
@@ -209,7 +265,12 @@ const OwnerDashboard = () => {
                     <td className="price-cell">{Number(b.totalPrice).toLocaleString('vi-VN')}đ</td>
                     <td><span className={`status-badge status-${b.status.toLowerCase()}`}>{b.status}</span></td>
                     <td className="actions-cell">
-                      {b.status === 'PENDING' && <button className="btn-sm btn-success" onClick={() => handleConfirm(b.bookingId)}>Xác nhận</button>}
+                      {b.status === 'PENDING' && (
+                        <>
+                          <button className="btn-sm btn-success" onClick={() => handleConfirm(b.bookingId)}>Xác nhận</button>
+                          <button className="btn-sm btn-danger" onClick={() => handleReject(b.bookingId)}>Từ chối</button>
+                        </>
+                      )}
                       {b.status === 'CONFIRMED' && <button className="btn-sm btn-primary" onClick={() => handleComplete(b.bookingId)}>Hoàn thành</button>}
                     </td>
                   </tr>
@@ -217,6 +278,27 @@ const OwnerDashboard = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Offline Tab */}
+      {activeTab === 'offline' && (
+        <div className="tab-content">
+          <form className="form-offline" onSubmit={handleOfflineSubmit} style={{maxWidth: '500px', margin: '0 auto', background: '#f9f9f9', padding: '20px', borderRadius: '8px'}}>
+            <h3 style={{marginBottom: '15px'}}>Tạo Đơn Offline</h3>
+            <div className="form-group">
+              <label>Chọn xe</label>
+              <select required value={offlineForm.carId} onChange={e => setOfflineForm({...offlineForm, carId: e.target.value})}>
+                <option value="">-- Chọn xe --</option>
+                {cars.map(c => <option key={c.carId} value={c.carId}>{c.name} - {c.licensePlate}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Tên khách hàng</label><input required value={offlineForm.customerName} onChange={e => setOfflineForm({...offlineForm, customerName: e.target.value})} /></div>
+            <div className="form-group"><label>Số điện thoại</label><input required value={offlineForm.customerPhone} onChange={e => setOfflineForm({...offlineForm, customerPhone: e.target.value})} /></div>
+            <div className="form-group"><label>Ngày bắt đầu</label><input type="datetime-local" required value={offlineForm.startDate} onChange={e => setOfflineForm({...offlineForm, startDate: e.target.value})} /></div>
+            <div className="form-group"><label>Ngày kết thúc</label><input type="datetime-local" required value={offlineForm.endDate} onChange={e => setOfflineForm({...offlineForm, endDate: e.target.value})} /></div>
+            <button className="btn-primary" style={{width: '100%', marginTop: '10px'}} type="submit">Tạo Đơn (Thanh Toán Tiền Mặt)</button>
+          </form>
         </div>
       )}
 
@@ -285,6 +367,39 @@ const OwnerDashboard = () => {
                 <button type="submit" className="btn-primary">{editingCar ? 'Cập nhật' : 'Thêm xe'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Schedule Modal */}
+      {showSchedule && (
+        <div className="modal-overlay" onClick={() => setShowSchedule(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Quản lý lịch (Các ngày bận)</h3>
+            <p style={{marginBottom: '15px', color: '#666', fontSize: '14px'}}>Xe <strong>{editingCar?.name}</strong> - Biển số: {editingCar?.licensePlate}</p>
+            <form onSubmit={handleAddSchedule} style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input type="datetime-local" required value={scheduleForm.startDate} onChange={e=>setScheduleForm({...scheduleForm, startDate: e.target.value})} />
+              <input type="datetime-local" required value={scheduleForm.endDate} onChange={e=>setScheduleForm({...scheduleForm, endDate: e.target.value})} />
+              <button className="btn-primary" type="submit">Khoá lịch</button>
+            </form>
+            <div style={{maxHeight:'250px', overflowY:'auto'}}>
+              <table className="data-table">
+                <thead><tr><th>Từ ngày</th><th>Đến ngày</th><th>Thao tác</th></tr></thead>
+                <tbody>
+                  {currentCarSchedules.length === 0 && <tr><td colSpan="3" style={{textAlign:'center'}}>Chưa có lịch bị khóa</td></tr>}
+                  {currentCarSchedules.map(s => (
+                    <tr key={s.scheduleId}>
+                      <td>{new Date(s.startDate).toLocaleString('vi-VN')}</td>
+                      <td>{new Date(s.endDate).toLocaleString('vi-VN')}</td>
+                      <td><button className="btn-sm btn-danger" onClick={() => handleDeleteSchedule(s.scheduleId)}>Xóa</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="modal-actions" style={{marginTop: '20px'}}>
+              <button type="button" className="btn-secondary" onClick={() => setShowSchedule(false)}>Đóng</button>
+            </div>
           </div>
         </div>
       )}

@@ -7,6 +7,8 @@ const CustomerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [feedbackForm, setFeedbackForm] = useState({ bookingId: null, rating: 5, comment: '' });
   const [showFeedback, setShowFeedback] = useState(false);
+  const [extendForm, setExtendForm] = useState({ bookingId: null, newEndDate: '' });
+  const [showExtend, setShowExtend] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => { loadBookings(); }, []);
@@ -46,6 +48,17 @@ const CustomerDashboard = () => {
       setFeedbackForm({ bookingId: null, rating: 5, comment: '' });
       loadBookings();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi gửi đánh giá'); }
+  };
+
+  const handleExtend = async (e) => {
+    e.preventDefault();
+    try {
+      await bookingService.extendBooking(extendForm.bookingId, { newEndDate: extendForm.newEndDate });
+      setMessage('Gia hạn thành công!');
+      setShowExtend(false);
+      setExtendForm({ bookingId: null, newEndDate: '' });
+      loadBookings();
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi gia hạn'); }
   };
 
   const getStatusClass = (status) => {
@@ -88,14 +101,21 @@ const CustomerDashboard = () => {
                     {b.status === 'PENDING' && (
                       <>
                         <button className="btn-sm btn-success" onClick={() => handlePayment(b.bookingId)}>Thanh toán</button>
+                        <button className="btn-sm btn-primary" onClick={() => { setExtendForm({ bookingId: b.bookingId, newEndDate: '' }); setShowExtend(true); }}>Gia hạn</button>
                         <button className="btn-sm btn-danger" onClick={() => handleCancel(b.bookingId)}>Hủy</button>
                       </>
                     )}
                     {b.status === 'CONFIRMED' && (
-                      <button className="btn-sm btn-danger" onClick={() => handleCancel(b.bookingId)}>Hủy</button>
+                      <>
+                        <button className="btn-sm btn-primary" onClick={() => { setExtendForm({ bookingId: b.bookingId, newEndDate: '' }); setShowExtend(true); }}>Gia hạn</button>
+                        <button className="btn-sm btn-danger" onClick={() => handleCancel(b.bookingId)}>Hủy</button>
+                      </>
                     )}
-                    {b.status === 'COMPLETED' && b.paymentStatus !== 'NOT_PAID' && (
+                    {b.status === 'COMPLETED' && b.paymentStatus !== 'NOT_PAID' && !b.hasFeedback && (
                       <button className="btn-sm btn-primary" onClick={() => { setFeedbackForm({...feedbackForm, bookingId: b.bookingId}); setShowFeedback(true); }}>Đánh giá</button>
+                    )}
+                    {b.status === 'COMPLETED' && b.hasFeedback && (
+                      <span className="status-badge status-completed" style={{background: '#6c757d'}}>Đã đánh giá</span>
                     )}
                   </td>
                 </tr>
@@ -128,6 +148,27 @@ const CustomerDashboard = () => {
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setShowFeedback(false)}>Hủy</button>
                 <button type="submit" className="btn-primary">Gửi đánh giá</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Extend Booking Modal */}
+      {showExtend && (
+        <div className="modal-overlay" onClick={() => setShowExtend(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Gia hạn lịch thuê</h3>
+            <form onSubmit={handleExtend}>
+              <div className="form-group">
+                <label>Ngày kết thúc mới</label>
+                <input type="datetime-local" required
+                       value={extendForm.newEndDate}
+                       onChange={(e) => setExtendForm({...extendForm, newEndDate: e.target.value})} />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowExtend(false)}>Hủy</button>
+                <button type="submit" className="btn-primary">Xác nhận</button>
               </div>
             </form>
           </div>

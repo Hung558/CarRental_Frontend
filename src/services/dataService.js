@@ -20,6 +20,9 @@ export const bookingService = {
   cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
   confirmBooking: (id) => api.put(`/bookings/${id}/confirm`),
   completeBooking: (id) => api.put(`/bookings/${id}/complete`),
+  extendBooking: (id, data) => api.patch(`/bookings/${id}/extend`, data),
+  rejectBooking: (id) => api.patch(`/bookings/${id}/reject`),
+  createOfflineBooking: (data) => api.post('/bookings/offline', data),
 };
 
 export const feedbackService = {
@@ -37,6 +40,8 @@ export const ownerService = {
   getMyBookings: () => api.get('/owner/bookings'),
   getRevenue: () => api.get('/owner/revenue'),
   addSchedule: (carId, data) => api.post(`/owner/cars/${carId}/schedules`, data),
+  getSchedules: (carId) => api.get(`/owner/cars/${carId}/schedules`),
+  deleteSchedule: (scheduleId) => api.delete(`/owner/schedules/${scheduleId}`),
 };
 
 export const brandService = {
