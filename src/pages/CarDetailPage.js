@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { carService, bookingService, feedbackService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
+import { toLocalISOString, getAbsoluteInterval } from '../utils/dateUtils';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../styles/CarDetailPage.css';
@@ -13,7 +14,18 @@ const CarDetailPage = () => {
   const [car, setCar] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [booking, setBooking] = useState({ startDate: null, endDate: null, bookingType: 'DAY' });
+  const [booking, setBooking] = useState({ 
+    startDate: null, 
+    endDate: null, 
+    bookingType: 'DAY',
+    // Specifically for Hourly:
+    selectedDate: null, 
+    startTime: '08:00',
+    endTime: '18:00',
+    // Specifically for Monthly:
+    startMonth: null,
+    endMonth: null
+  });
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
   const [excludedIntervals, setExcludedIntervals] = useState([]);
@@ -82,19 +94,20 @@ const CarDetailPage = () => {
       return;
     }
 
-    if (!booking.startDate || !booking.endDate) {
-      setBookingError('Vui lòng chọn ngày bắt đầu và kết thúc');
+    const interval = getAbsoluteInterval(booking);
+    if (!interval) {
+      setBookingError('Vui lòng chọn đầy đủ thời gian thuê');
       return;
     }
 
-    if (booking.endDate <= booking.startDate) {
-      setBookingError('Ngày kết thúc phải sau ngày bắt đầu');
+    const { start, end } = interval;
+    if (end <= start) {
+      setBookingError('Thời gian kết thúc phải sau thời gian bắt đầu');
       return;
     }
 
-    // Manual overlap check against excludedIntervals
-    const isOverlapping = excludedIntervals.some(interval => {
-      return (booking.startDate < interval.end && booking.endDate > interval.start);
+    const isOverlapping = excludedIntervals.some(inv => {
+      return (start < inv.end && end > inv.start);
     });
 
     if (isOverlapping) {
@@ -110,25 +123,14 @@ const CarDetailPage = () => {
     setSubmitting(true);
     setBookingError('');
 
-    // Helper to get ISO string in local time (avoiding UTC shift of toISOString)
-    const toLocalISOString = (date) => {
-      const pad = function(num) {
-              return (num < 10 ? '0' : '') + num;
-          };
-  
-      return date.getFullYear() +
-          '-' + pad(date.getMonth() + 1) +
-          '-' + pad(date.getDate()) +
-          'T' + pad(date.getHours()) +
-          ':' + pad(date.getMinutes()) +
-          ':' + pad(date.getSeconds());
-    };
+    const interval = getAbsoluteInterval(booking);
+    if (!interval) return;
 
     try {
       await bookingService.createBooking({
         carId: parseInt(id),
-        startDate: toLocalISOString(booking.startDate),
-        endDate: toLocalISOString(booking.endDate),
+        startDate: toLocalISOString(interval.start),
+        endDate: toLocalISOString(interval.end),
         bookingType: booking.bookingType,
       });
       setShowSummary(false);
@@ -148,15 +150,15 @@ const CarDetailPage = () => {
   };
 
   const calculateTotalPrice = () => {
-    if (!booking.startDate || !booking.endDate || !car) return null;
-    const start = booking.startDate;
-    const end = booking.endDate;
+    const interval = getAbsoluteInterval(booking);
+    if (!interval || !car) return null;
+    const { start, end } = interval;
     if (end <= start) return null;
 
     const diffMs = end - start;
     const diffHours = diffMs / (1000 * 60 * 60);
-    const diffDays = diffHours / 24;
-    const diffMonths = diffDays / 30;
+    const diffDays = Math.ceil(diffHours / 24);
+    const diffMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
 
     let total = 0;
     if (booking.bookingType === 'HOUR') total = diffHours * (car.priceHour || 0);
@@ -301,45 +303,113 @@ const CarDetailPage = () => {
             {bookingSuccess && <div className="alert-success" style={{marginBottom: '15px'}}>{bookingSuccess}</div>}
 
             <form onSubmit={handleShowSummary} className="booking-form">
-              <div className="date-inputs">
-                <div className="form-group">
-                  <label>Ngày bắt đầu</label>
-                  <DatePicker 
-                    selected={booking.startDate}
-                    onChange={(date) => {
-                      setBooking(prev => ({...prev, startDate: date}));
-                      setBookingError('');
-                    }}
-                    showTimeSelect
-                    timeIntervals={30}
-                    timeCaption="Giờ"
-                    dateFormat="dd/MM/yyyy HH:mm"
-                    placeholderText="Chọn ngày bắt đầu"
-                    className="datepicker-input"
-                    minDate={new Date()}
-                    autoComplete="off"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ngày kết thúc</label>
-                  <DatePicker 
-                    selected={booking.endDate}
-                    onChange={(date) => {
-                      setBooking(prev => ({...prev, endDate: date}));
-                      setBookingError('');
-                    }}
-                    showTimeSelect
-                    timeIntervals={30}
-                    timeCaption="Giờ"
-                    dateFormat="dd/MM/yyyy HH:mm"
-                    minDate={booking.startDate || new Date()}
-                    placeholderText="Chọn ngày kết thúc"
-                    className="datepicker-input"
-                    autoComplete="off"
-                    required
-                  />
-                </div>
+              <div className="dynamic-date-inputs">
+                {/* 1. HOURLY UI */}
+                {booking.bookingType === 'HOUR' && (
+                  <div className="hourly-picker-container">
+                    <div className="form-group">
+                      <label>Chọn ngày thuê</label>
+                      <DatePicker
+                        selected={booking.selectedDate}
+                        onChange={(date) => setBooking({ ...booking, selectedDate: date })}
+                        dateFormat="dd/MM/yyyy"
+                        minDate={new Date()}
+                        placeholderText="Chọn ngày"
+                        className="datepicker-input"
+                        required
+                      />
+                    </div>
+                    <div className="form-row" style={{ marginTop: '12px' }}>
+                      <div className="form-group">
+                        <label>Từ lúc</label>
+                        <select 
+                          value={booking.startTime} 
+                          onChange={e => setBooking({ ...booking, startTime: e.target.value })}
+                          className="datepicker-input"
+                        >
+                          {Array.from({ length: 24 }).map((_, h) => (
+                            <React.Fragment key={h}>
+                              <option value={`${h.toString().padStart(2, '0')}:00`}>{h.toString().padStart(2, '0')}:00</option>
+                              <option value={`${h.toString().padStart(2, '0')}:30`}>{h.toString().padStart(2, '0')}:30</option>
+                            </React.Fragment>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Đến lúc</label>
+                        <select 
+                          value={booking.endTime} 
+                          onChange={e => setBooking({ ...booking, endTime: e.target.value })}
+                          className="datepicker-input"
+                        >
+                          {Array.from({ length: 24 }).map((_, h) => (
+                            <React.Fragment key={h}>
+                              <option value={`${h.toString().padStart(2, '0')}:00`}>{h.toString().padStart(2, '0')}:00</option>
+                              <option value={`${h.toString().padStart(2, '0')}:30`}>{h.toString().padStart(2, '0')}:30</option>
+                            </React.Fragment>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. DAILY UI */}
+                {booking.bookingType === 'DAY' && (
+                  <div className="daily-picker-container">
+                    <div className="form-group">
+                      <label>Chọn khoảng ngày (Từ ngày - Đến ngày)</label>
+                      <DatePicker
+                        selectsRange={true}
+                        startDate={booking.startDate}
+                        endDate={booking.endDate}
+                        onChange={(update) => {
+                          const [start, end] = update;
+                          setBooking({ ...booking, startDate: start, endDate: end });
+                        }}
+                        minDate={new Date()}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText="Chọn khoảng ngày thuê"
+                        className="datepicker-input"
+                        required
+                        isClearable={true}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. MONTHLY UI */}
+                {booking.bookingType === 'MONTH' && (
+                  <div className="monthly-picker-container">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Từ tháng</label>
+                        <DatePicker
+                          selected={booking.startMonth}
+                          onChange={(date) => setBooking({ ...booking, startMonth: date })}
+                          dateFormat="MM/yyyy"
+                          showMonthYearPicker
+                          placeholderText="Từ tháng"
+                          className="datepicker-input"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Đến tháng</label>
+                        <DatePicker
+                          selected={booking.endMonth}
+                          onChange={(date) => setBooking({ ...booking, endMonth: date })}
+                          dateFormat="MM/yyyy"
+                          showMonthYearPicker
+                          minDate={booking.startMonth}
+                          placeholderText="Đến tháng"
+                          className="datepicker-input"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {excludedIntervals.length > 0 && (
@@ -403,11 +473,11 @@ const CarDetailPage = () => {
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between'}}>
                   <span style={{color: '#888'}}>Ngày bắt đầu</span>
-                  <span style={{fontWeight: 600}}>{booking.startDate?.toLocaleString('vi-VN')}</span>
+                  <span style={{fontWeight: 600}}>{getAbsoluteInterval(booking)?.start?.toLocaleString('vi-VN')}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between'}}>
                   <span style={{color: '#888'}}>Ngày kết thúc</span>
-                  <span style={{fontWeight: 600}}>{booking.endDate?.toLocaleString('vi-VN')}</span>
+                  <span style={{fontWeight: 600}}>{getAbsoluteInterval(booking)?.end?.toLocaleString('vi-VN')}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between'}}>
                   <span style={{color: '#888'}}>Đơn giá</span>

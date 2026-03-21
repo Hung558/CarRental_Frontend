@@ -1,79 +1,371 @@
-.car-detail-page { max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+.car-detail-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
 
-.car-detail-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; margin-bottom: 40px; }
+.car-detail-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+  margin-bottom: 40px;
+}
 
-.main-image { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-.main-image img { width: 100%; height: 400px; object-fit: cover; }
-.image-thumbnails { display: flex; gap: 8px; margin-top: 8px; }
-.image-thumbnails img { width: 80px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+.main-image {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
 
-.car-info-section { display: flex; flex-direction: column; gap: 20px; }
-.car-detail-header { display: flex; justify-content: space-between; align-items: center; }
-.car-detail-header h1 { font-size: 28px; font-weight: 700; }
-.detail-badge { background: var(--success); color: #000; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.main-image img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+}
 
-.car-meta { display: flex; flex-wrap: wrap; gap: 12px; }
-.meta-item { font-size: 13px; color: var(--text-secondary); background: var(--bg-surface); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
+.image-thumbnails {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
 
-.car-description h3, .car-pricing h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
-.car-description p { color: var(--text-secondary); font-size: 14px; }
+.image-thumbnails img {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.car-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.car-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.car-detail-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.detail-badge {
+  background: var(--success);
+  color: #000;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.car-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meta-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.car-description h3,
+.car-pricing h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.car-description p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
 
 /* Pricing Grid Enhancements */
-.price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 12px; }
-.price-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: var(--transition); display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.price-item:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-.price-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-.price-val { font-size: 22px; font-weight: 800; color: var(--primary-light); }
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.price-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.price-item:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.price-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.price-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-light);
+}
 
 /* Premium Booking Section */
-.booking-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); position: sticky; top: 100px; }
-.booking-section h3 { font-size: 20px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+.booking-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 100px;
+}
+
+.booking-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 /* Type Selection Tabs */
-.booking-type-tabs { display: flex; background: var(--bg-surface); padding: 5px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 24px; }
-.type-tab { flex: 1; border: none; background: none; color: var(--text-secondary); padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.type-tab:hover { color: var(--text-primary); }
-.type-tab.active { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; box-shadow: 0 4px 15px rgba(114, 9, 183, 0.3); }
+.booking-type-tabs {
+  display: flex;
+  background: var(--bg-surface);
+  padding: 5px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
 
-.booking-form { display: flex; flex-direction: column; gap: 20px; }
-.date-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.booking-form .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); }
-.booking-form input { width: 100%; background: var(--bg-surface) !important; border: 1px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text-primary); font-family: inherit; transition: var(--transition); }
-.booking-form input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(114, 9, 183, 0.1); }
+.type-tab {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.type-tab:hover {
+  color: var(--text-primary);
+}
+
+.type-tab.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  box-shadow: 0 4px 15px rgba(114, 9, 183, 0.3);
+}
+
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.date-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.booking-form .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.booking-form input {
+  width: 100%;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.booking-form input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(114, 9, 183, 0.1);
+}
 
 /* Real-time Estimate */
-.booking-total-estimate { margin-top: 10px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-.estimate-row { display: flex; justify-content: space-between; align-items: center; }
-.estimate-label { color: var(--text-muted); font-size: 14px; }
-.estimate-value { font-size: 15px; font-weight: 600; }
-.total-row { margin-top: 8px; }
-.total-label { font-weight: 700; color: var(--text-primary); font-size: 16px; }
-.total-value { font-size: 24px; font-weight: 800; color: var(--accent); }
+.booking-total-estimate {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-.btn-book { margin-top: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
-.btn-book:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 30px rgba(114, 9, 183, 0.4); }
-.btn-book:active { transform: translateY(0); }
+.estimate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.feedbacks-section { border-top: 1px solid var(--border); padding-top: 32px; }
-.feedbacks-section h2 { font-size: 22px; margin-bottom: 12px; }
-.car-rating-summary { font-size: 20px; color: var(--warning); margin-bottom: 20px; }
-.feedbacks-list { display: flex; flex-direction: column; gap: 12px; }
-.feedback-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
-.feedback-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.feedback-user { font-weight: 600; font-size: 14px; }
-.feedback-rating { color: var(--warning); }
-.feedback-comment { color: var(--text-secondary); font-size: 14px; }
-.feedback-date { font-size: 12px; color: var(--text-muted); margin-top: 8px; display: block; }
-.no-feedback { color: var(--text-muted); }
+.estimate-label {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.estimate-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.total-row {
+  margin-top: 8px;
+}
+
+.total-label {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.total-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.btn-book {
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  padding: 18px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-book:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(114, 9, 183, 0.4);
+}
+
+.btn-book:active {
+  transform: translateY(0);
+}
+
+.feedbacks-section {
+  border-top: 1px solid var(--border);
+  padding-top: 32px;
+}
+
+.feedbacks-section h2 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.car-rating-summary {
+  font-size: 20px;
+  color: var(--warning);
+  margin-bottom: 20px;
+}
+
+.feedbacks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.feedback-user {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.feedback-rating {
+  color: var(--warning);
+}
+
+.feedback-comment {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.feedback-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  display: block;
+}
+
+.no-feedback {
+  color: var(--text-muted);
+}
 
 @media (max-width: 992px) {
-  .car-detail-grid { grid-template-columns: 1fr; }
-  .booking-section { position: static; }
+  .car-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-section {
+    position: static;
+  }
 }
 
 @media (max-width: 576px) {
-  .date-inputs { grid-template-columns: 1fr; }
-  .price-grid { grid-template-columns: 1fr; }
+  .date-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .price-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* DatePicker Premium Overrides */
@@ -106,66 +398,91 @@
 
 /* Availability Schedule */
 .car-availability-schedule {
-  background: var(--bg-surface, #ffffff);
-  border-radius: 12px;
-  padding: 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
   margin-bottom: 25px;
-  border: 1px solid #eee;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .car-availability-schedule h3 {
-  margin-bottom: 15px;
+  margin-bottom: 18px;
   font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #333;
+  gap: 10px;
+  color: var(--text-primary);
   margin-top: 0;
 }
 
 .schedule-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 200px;
+  gap: 12px;
+  max-height: 220px;
   overflow-y: auto;
-  padding-right: 5px;
+  padding-right: 8px;
 }
 
 .schedule-list::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 
 .schedule-list::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
+  background: var(--border);
+  border-radius: 10px;
 }
 
 .schedule-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: #fdf2f2;
-  border-left: 4px solid #ff6b6b;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px 16px;
+  background: rgba(239, 71, 111, 0.08);
+  border-left: 4px solid var(--danger);
+  border-radius: 8px;
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.schedule-item:hover {
+  background: rgba(239, 71, 111, 0.15);
+  transform: translateX(4px);
 }
 
 .schedule-time {
-  color: #c92a2a;
-  font-weight: 500;
+  color: #ff8fa3;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
 }
 
 .schedule-status-badge {
-  background: #ff6b6b;
+  background: var(--danger);
   color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 10px;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.dynamic-date-inputs {
+  margin-bottom: 24px;
+}
+
+.hourly-picker-container,
+.daily-picker-container,
+.monthly-picker-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.hourly-picker-container .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 .datepicker-input {
@@ -176,6 +493,12 @@
   border-radius: 12px !important;
   color: #fff !important;
   cursor: pointer !important;
+  transition: var(--transition);
+}
+
+.datepicker-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15) !important;
 }
 
 .react-datepicker {
@@ -191,7 +514,9 @@
   border-bottom: 1px solid #2a2d42 !important;
 }
 
-.react-datepicker__current-month, .react-datepicker__day-name, .react-datepicker__time-name {
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__time-name {
   color: #fff !important;
 }
 
@@ -240,4 +565,15 @@
   background-color: #7209b7 !important;
   color: #fff !important;
   font-weight: bold !important;
+}
+
+/* FIX: MÀU NĂM (2026) TRẮNG SÁNG - ĐỪNG XÓA */
+.react-datepicker__header,
+.react-datepicker__current-month,
+.react-datepicker__header * {
+  color: #ffffff !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: #ffffff !important;
 }

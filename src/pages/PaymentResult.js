@@ -30,7 +30,7 @@ const PaymentResult = () => {
           await paymentService.verifyVNPay({ bookingId, transactionId });
           console.log('Payment verification success');
           setStatus('success');
-          setMessage('Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.');
+          setMessage('Thanh toán thành công! Đơn hàng của bạn đang chờ chủ xe duyệt.');
         } catch (err) {
           console.error('Verify error:', err);
           setStatus('error');

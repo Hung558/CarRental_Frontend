@@ -23,7 +23,7 @@ export const bookingService = {
   confirmBooking: (id) => api.put(`/bookings/${id}/confirm`),
   completeBooking: (id) => api.put(`/bookings/${id}/complete`),
   extendBooking: (id, data) => api.patch(`/bookings/${id}/extend`, data),
-  rejectBooking: (id) => api.patch(`/bookings/${id}/reject`),
+  rejectBooking: (id) => api.put(`/bookings/${id}/reject`),
   createOfflineBooking: (data) => api.post('/bookings/offline', data),
 };
 

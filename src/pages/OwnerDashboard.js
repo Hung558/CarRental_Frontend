@@ -3,7 +3,11 @@ import { ownerService, carService, brandService, categoryService, bookingService
 import '../styles/Dashboard.css';
 
 const OwnerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('cars');
+  const [activeTab, setActiveTab] = useState(localStorage.getItem('ownerActiveTab') || 'cars');
+
+  useEffect(() => {
+    localStorage.setItem('ownerActiveTab', activeTab);
+  }, [activeTab]);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [revenue, setRevenue] = useState({});
@@ -18,7 +22,7 @@ const OwnerDashboard = () => {
     name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
     description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: []
   });
-  
+
   const [offlineForm, setOfflineForm] = useState({
     carId: '', customerName: '', customerPhone: '', startDate: '', endDate: ''
   });
@@ -27,12 +31,22 @@ const OwnerDashboard = () => {
   const [scheduleForm, setScheduleForm] = useState({ startDate: '', endDate: '' });
   const [formErrors, setFormErrors] = useState({});
 
+  const statusMap = {
+    PENDING_PAYMENT: 'Pending Payment',
+    PENDING: 'Pending ',
+    CONFIRMED: 'Confirmed',
+    IN_PROGRESS: 'On Progress',
+    COMPLETED: 'Completed',
+    CANCELLED: 'Cancelled',
+    REJECTED: 'Rejected'
+  };
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Helper function to handle individual service calls safely
       const safeCall = async (serviceMethod, defaultValue = []) => {
         try {
@@ -86,8 +100,8 @@ const OwnerDashboard = () => {
     }
 
     const hasPrice = (carForm.priceHour && parseFloat(carForm.priceHour) > 0) ||
-                     (carForm.priceDay && parseFloat(carForm.priceDay) > 0) ||
-                     (carForm.priceMonth && parseFloat(carForm.priceMonth) > 0);
+      (carForm.priceDay && parseFloat(carForm.priceDay) > 0) ||
+      (carForm.priceMonth && parseFloat(carForm.priceMonth) > 0);
     if (!hasPrice) errors.price = 'Phải nhập ít nhất 1 loại giá (> 0)';
 
     if (carForm.priceHour && parseFloat(carForm.priceHour) < 0) errors.priceHour = 'Giá không được âm';
@@ -102,7 +116,8 @@ const OwnerDashboard = () => {
     e.preventDefault();
     if (!validateCarForm()) return;
     try {
-      const data = { ...carForm, brandId: parseInt(carForm.brandId), categoryId: parseInt(carForm.categoryId),
+      const data = {
+        ...carForm, brandId: parseInt(carForm.brandId), categoryId: parseInt(carForm.categoryId),
         year: carForm.year ? parseInt(carForm.year) : null,
         priceHour: carForm.priceHour ? parseFloat(carForm.priceHour) : null,
         priceDay: carForm.priceDay ? parseFloat(carForm.priceDay) : null,
@@ -144,6 +159,7 @@ const OwnerDashboard = () => {
   };
 
   const handleConfirm = async (bookingId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn duyệt đơn thuê xe này?')) return;
     try {
       await bookingService.confirmBooking(bookingId);
       setMessage('Duyệt đơn thành công');
@@ -151,15 +167,26 @@ const OwnerDashboard = () => {
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
   };
 
-  const handleHandover = async (bookingId) => {
+  const handleHandover = async (booking) => {
+    const now = new Date();
+    const startDate = new Date(booking.startDate);
+    let confirmMsg = 'Bạn có chắc chắn muốn giao xe?';
+
+    if (now < startDate) {
+      confirmMsg = 'Bạn có chắc chắn muốn giao xe trước thời gian đã đặt?';
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
     try {
-      await ownerService.handoverBooking(bookingId);
+      await ownerService.handoverBooking(booking.bookingId);
       setMessage('Xác nhận giao xe thành công');
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi giao xe'); }
   };
 
   const handleComplete = async (bookingId) => {
+    if (!window.confirm('Bạn có chắc chắn đã nhận lại xe?')) return;
     try {
       await bookingService.completeBooking(bookingId);
       setMessage('Hoàn thành đơn thành công');
@@ -168,10 +195,10 @@ const OwnerDashboard = () => {
   };
 
   const handleReject = async (bookingId) => {
-    if (!window.confirm('Từ chối đơn này?')) return;
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn này?')) return;
     try {
       await bookingService.rejectBooking(bookingId);
-      setMessage('Từ chối đơn thành công');
+      setMessage('Hủy đơn thành công');
       loadData();
     } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
   };
@@ -184,7 +211,7 @@ const OwnerDashboard = () => {
       setOfflineForm({ carId: '', customerName: '', customerPhone: '', startDate: '', endDate: '' });
       setActiveTab('bookings');
       loadData();
-    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi tạo đơn'); }
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi tạo đơn'); }
   }
 
   const handleManageSchedule = async (car) => {
@@ -193,7 +220,7 @@ const OwnerDashboard = () => {
       const res = await ownerService.getSchedules(car.carId);
       setCurrentCarSchedules(res.data);
       setShowSchedule(true);
-    } catch(err) { setMessage('Lỗi tải lịch'); }
+    } catch (err) { setMessage('Lỗi tải lịch'); }
   }
 
   const handleAddSchedule = async (e) => {
@@ -210,7 +237,7 @@ const OwnerDashboard = () => {
       return;
     }
     // Check overlap with existing schedules
-    const overlap = currentCarSchedules.find(s => 
+    const overlap = currentCarSchedules.find(s =>
       start < new Date(s.endDate) && end > new Date(s.startDate)
     );
     if (overlap) {
@@ -220,10 +247,10 @@ const OwnerDashboard = () => {
     try {
       await ownerService.addSchedule(editingCar.carId, scheduleForm);
       setMessage('Thêm lịch thành công');
-      setScheduleForm({startDate: '', endDate: ''});
+      setScheduleForm({ startDate: '', endDate: '' });
       const res = await ownerService.getSchedules(editingCar.carId);
       setCurrentCarSchedules(res.data);
-    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
   }
 
   const handleDeleteSchedule = async (id) => {
@@ -232,12 +259,14 @@ const OwnerDashboard = () => {
       setMessage('Xóa lịch thành công');
       const res = await ownerService.getSchedules(editingCar.carId);
       setCurrentCarSchedules(res.data);
-    } catch(err) { setMessage(err.response?.data?.message || 'Lỗi'); }
+    } catch (err) { setMessage(err.response?.data?.message || 'Lỗi'); }
   }
 
   const resetForm = () => {
-    setCarForm({ name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
-      description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: [] });
+    setCarForm({
+      name: '', brandId: '', categoryId: '', color: '', year: '', licensePlate: '',
+      description: '', locationCity: '', locationDistrict: '', priceHour: '', priceDay: '', priceMonth: '', imageUrls: []
+    });
     setImageUrlInput('');
   };
 
@@ -326,22 +355,22 @@ const OwnerDashboard = () => {
                     <td>{b.carName}</td>
                     <td>{new Date(b.startDate).toLocaleDateString('vi-VN')} - {new Date(b.endDate).toLocaleDateString('vi-VN')}</td>
                     <td className="price-cell">{Number(b.totalPrice).toLocaleString('vi-VN')}đ</td>
-                    <td><span className={`status-badge status-${b.status.toLowerCase()}`}>{b.status}</span></td>
+                    <td><span className={`status-badge status-${b.status.toLowerCase()}`}>{statusMap[b.status] || b.status}</span></td>
                     <td className="actions-cell">
-                      {b.status === 'PENDING_PAYMENT' && (
+                      {b.status === 'PENDING' && (
                         <>
                           <button className="btn-sm btn-success" onClick={() => handleConfirm(b.bookingId)}>Duyệt đơn</button>
-                          <button className="btn-sm btn-danger" onClick={() => handleReject(b.bookingId)}>Từ chối</button>
+                          <button className="btn-sm btn-danger" onClick={() => handleReject(b.bookingId)}>Hủy đơn</button>
                         </>
                       )}
                       {b.status === 'CONFIRMED' && b.paymentStatus === 'COMPLETED' && (
-                          <button className="btn-sm btn-success" onClick={() => handleHandover(b.bookingId)}>Giao xe</button>
+                        <button className="btn-sm btn-success" onClick={() => handleHandover(b)}>Giao xe</button>
                       )}
                       {b.status === 'CONFIRMED' && b.paymentStatus !== 'COMPLETED' && (
-                          <span style={{fontSize: '0.85rem', color: '#ff9800', fontWeight: 'bold'}}>Chờ thanh toán</span>
+                        <span style={{ fontSize: '0.85rem', color: '#ff9800', fontWeight: 'bold' }}>Chờ thanh toán</span>
                       )}
                       {b.status === 'IN_PROGRESS' && (
-                          <button className="btn-sm btn-primary" onClick={() => handleComplete(b.bookingId)}>Hoàn thành</button>
+                        <button className="btn-sm btn-primary" onClick={() => handleComplete(b.bookingId)}>Đã nhận lại xe</button>
                       )}
                     </td>
                   </tr>
@@ -355,21 +384,77 @@ const OwnerDashboard = () => {
       {/* Offline Tab */}
       {activeTab === 'offline' && (
         <div className="tab-content">
-          <form className="form-offline" onSubmit={handleOfflineSubmit} style={{maxWidth: '500px', margin: '0 auto', background: '#f9f9f9', padding: '20px', borderRadius: '8px'}}>
-            <h3 style={{marginBottom: '15px'}}>Tạo Đơn Offline</h3>
-            <div className="form-group">
-              <label>Chọn xe</label>
-              <select required value={offlineForm.carId} onChange={e => setOfflineForm({...offlineForm, carId: e.target.value})}>
-                <option value="">-- Chọn xe --</option>
-                {cars.map(c => <option key={c.carId} value={c.carId}>{c.name} - {c.licensePlate}</option>)}
-              </select>
+          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div className="stat-card" style={{ textAlign: 'left', padding: '32px' }}>
+              <h3 style={{ marginBottom: '24px', fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                Tạo Đơn Offline
+              </h3>
+              
+              <form onSubmit={handleOfflineSubmit}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label>Chọn xe *</label>
+                  <select 
+                    required 
+                    value={offlineForm.carId} 
+                    onChange={e => setOfflineForm({ ...offlineForm, carId: e.target.value })}
+                  >
+                    <option value="">-- Chọn xe muốn cho thuê --</option>
+                    {cars.map(c => <option key={c.carId} value={c.carId}>{c.name} - {c.licensePlate}</option>)}
+                  </select>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: '20px' }}>
+                  <div className="form-group">
+                    <label>Tên khách hàng *</label>
+                    <input 
+                      required 
+                      placeholder="Nhập tên khách hàng"
+                      value={offlineForm.customerName} 
+                      onChange={e => setOfflineForm({ ...offlineForm, customerName: e.target.value })} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Số điện thoại *</label>
+                    <input 
+                      required 
+                      placeholder="Số điện thoại liên lạc"
+                      value={offlineForm.customerPhone} 
+                      onChange={e => setOfflineForm({ ...offlineForm, customerPhone: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row" style={{ marginBottom: '28px' }}>
+                  <div className="form-group">
+                    <label>Ngày bắt đầu *</label>
+                    <input 
+                      type="datetime-local" 
+                      required 
+                      value={offlineForm.startDate} 
+                      onChange={e => setOfflineForm({ ...offlineForm, startDate: e.target.value })} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Ngày kết thúc *</label>
+                    <input 
+                      type="datetime-local" 
+                      required 
+                      value={offlineForm.endDate} 
+                      onChange={e => setOfflineForm({ ...offlineForm, endDate: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <button className="btn-primary" style={{ width: '100%', padding: '14px', fontSize: '16px' }} type="submit">
+                  🚀 Xác Nhận Tạo Đơn (Thanh Toán Tiền Mặt)
+                </button>
+              </form>
             </div>
-            <div className="form-group"><label>Tên khách hàng</label><input required value={offlineForm.customerName} onChange={e => setOfflineForm({...offlineForm, customerName: e.target.value})} /></div>
-            <div className="form-group"><label>Số điện thoại</label><input required value={offlineForm.customerPhone} onChange={e => setOfflineForm({...offlineForm, customerPhone: e.target.value})} /></div>
-            <div className="form-group"><label>Ngày bắt đầu</label><input type="datetime-local" required value={offlineForm.startDate} onChange={e => setOfflineForm({...offlineForm, startDate: e.target.value})} /></div>
-            <div className="form-group"><label>Ngày kết thúc</label><input type="datetime-local" required value={offlineForm.endDate} onChange={e => setOfflineForm({...offlineForm, endDate: e.target.value})} /></div>
-            <button className="btn-primary" style={{width: '100%', marginTop: '10px'}} type="submit">Tạo Đơn (Thanh Toán Tiền Mặt)</button>
-          </form>
+            
+            <div style={{ marginTop: '20px', padding: '16px', borderRadius: '12px', background: 'rgba(67, 97, 238, 0.1)', border: '1px dashed var(--primary-light)', color: 'var(--text-secondary)', fontSize: '13px' }}>
+               💡 <strong>Lưu ý:</strong> Đơn offline sẽ được hệ thống tự động xác nhận và chuyển sang trạng thái "Confirmed". Bạn có thể thực hiện "Giao xe" ngay sau khi tạo đơn.
+            </div>
+          </div>
         </div>
       )}
 
@@ -382,69 +467,69 @@ const OwnerDashboard = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Tên xe *</label>
-                  <input value={carForm.name} onChange={e => setCarForm({...carForm, name: e.target.value})} />
-                  {formErrors.name && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.name}</span>}
+                  <input value={carForm.name} onChange={e => setCarForm({ ...carForm, name: e.target.value })} />
+                  {formErrors.name && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.name}</span>}
                 </div>
                 <div className="form-group">
                   <label>Biển số *</label>
-                  <input value={carForm.licensePlate} onChange={e => setCarForm({...carForm, licensePlate: e.target.value})} />
-                  {formErrors.licensePlate && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.licensePlate}</span>}
+                  <input value={carForm.licensePlate} onChange={e => setCarForm({ ...carForm, licensePlate: e.target.value })} />
+                  {formErrors.licensePlate && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.licensePlate}</span>}
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Hãng xe *</label>
-                  <select value={carForm.brandId} onChange={e => setCarForm({...carForm, brandId: e.target.value})}>
+                  <select value={carForm.brandId} onChange={e => setCarForm({ ...carForm, brandId: e.target.value })}>
                     <option value="">Chọn hãng</option>
                     {brands.map(b => <option key={b.brandId} value={b.brandId}>{b.name}</option>)}
                   </select>
-                  {formErrors.brandId && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.brandId}</span>}
+                  {formErrors.brandId && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.brandId}</span>}
                 </div>
                 <div className="form-group"><label>Loại xe *</label>
-                  <select value={carForm.categoryId} onChange={e => setCarForm({...carForm, categoryId: e.target.value})}>
+                  <select value={carForm.categoryId} onChange={e => setCarForm({ ...carForm, categoryId: e.target.value })}>
                     <option value="">Chọn loại</option>
                     {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}
                   </select>
-                  {formErrors.categoryId && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.categoryId}</span>}
+                  {formErrors.categoryId && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.categoryId}</span>}
                 </div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label>Màu</label><input value={carForm.color} onChange={e => setCarForm({...carForm, color: e.target.value})} /></div>
+                <div className="form-group"><label>Màu</label><input value={carForm.color} onChange={e => setCarForm({ ...carForm, color: e.target.value })} /></div>
                 <div className="form-group">
                   <label>Năm SX</label>
-                  <input type="number" value={carForm.year} onChange={e => setCarForm({...carForm, year: e.target.value})} />
-                  {formErrors.year && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.year}</span>}
+                  <input type="number" value={carForm.year} onChange={e => setCarForm({ ...carForm, year: e.target.value })} />
+                  {formErrors.year && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.year}</span>}
                 </div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label>Thành phố</label><input value={carForm.locationCity} onChange={e => setCarForm({...carForm, locationCity: e.target.value})} /></div>
-                <div className="form-group"><label>Quận/Huyện</label><input value={carForm.locationDistrict} onChange={e => setCarForm({...carForm, locationDistrict: e.target.value})} /></div>
+                <div className="form-group"><label>Thành phố</label><input value={carForm.locationCity} onChange={e => setCarForm({ ...carForm, locationCity: e.target.value })} /></div>
+                <div className="form-group"><label>Quận/Huyện</label><input value={carForm.locationDistrict} onChange={e => setCarForm({ ...carForm, locationDistrict: e.target.value })} /></div>
               </div>
-              <div className="form-group"><label>Mô tả</label><textarea value={carForm.description} onChange={e => setCarForm({...carForm, description: e.target.value})} rows="3"></textarea></div>
+              <div className="form-group"><label>Mô tả</label><textarea value={carForm.description} onChange={e => setCarForm({ ...carForm, description: e.target.value })} rows="3"></textarea></div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Giá/giờ</label>
-                  <input type="number" value={carForm.priceHour} onChange={e => setCarForm({...carForm, priceHour: e.target.value})} />
-                  {formErrors.priceHour && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceHour}</span>}
+                  <input type="number" value={carForm.priceHour} onChange={e => setCarForm({ ...carForm, priceHour: e.target.value })} />
+                  {formErrors.priceHour && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.priceHour}</span>}
                 </div>
                 <div className="form-group">
                   <label>Giá/ngày</label>
-                  <input type="number" value={carForm.priceDay} onChange={e => setCarForm({...carForm, priceDay: e.target.value})} />
-                  {formErrors.priceDay && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceDay}</span>}
+                  <input type="number" value={carForm.priceDay} onChange={e => setCarForm({ ...carForm, priceDay: e.target.value })} />
+                  {formErrors.priceDay && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.priceDay}</span>}
                 </div>
                 <div className="form-group">
                   <label>Giá/tháng</label>
-                  <input type="number" value={carForm.priceMonth} onChange={e => setCarForm({...carForm, priceMonth: e.target.value})} />
-                  {formErrors.priceMonth && <span style={{color:'#ef476f',fontSize:'12px'}}>{formErrors.priceMonth}</span>}
+                  <input type="number" value={carForm.priceMonth} onChange={e => setCarForm({ ...carForm, priceMonth: e.target.value })} />
+                  {formErrors.priceMonth && <span style={{ color: '#ef476f', fontSize: '12px' }}>{formErrors.priceMonth}</span>}
                 </div>
               </div>
-              {formErrors.price && <div style={{color:'#ef476f',fontSize:'12px',marginBottom:'10px'}}>⚠️ {formErrors.price}</div>}
+              {formErrors.price && <div style={{ color: '#ef476f', fontSize: '12px', marginBottom: '10px' }}>⚠️ {formErrors.price}</div>}
 
               <div className="form-group image-management">
                 <label>Ảnh xe (URL)</label>
                 <div className="image-input-row">
-                  <input 
-                    placeholder="Dán link ảnh tại đây..." 
-                    value={imageUrlInput} 
+                  <input
+                    placeholder="Dán link ảnh tại đây..."
+                    value={imageUrlInput}
                     onChange={e => setImageUrlInput(e.target.value)}
                   />
                   <button type="button" className="btn-sm btn-primary" onClick={handleAddImageUrl}>+ Thêm</button>
@@ -474,17 +559,17 @@ const OwnerDashboard = () => {
         <div className="modal-overlay" onClick={() => setShowSchedule(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Quản lý lịch (Các ngày bận)</h3>
-            <p style={{marginBottom: '15px', color: '#666', fontSize: '14px'}}>Xe <strong>{editingCar?.name}</strong> - Biển số: {editingCar?.licensePlate}</p>
-            <form onSubmit={handleAddSchedule} style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-              <input type="datetime-local" required value={scheduleForm.startDate} onChange={e=>setScheduleForm({...scheduleForm, startDate: e.target.value})} />
-              <input type="datetime-local" required value={scheduleForm.endDate} onChange={e=>setScheduleForm({...scheduleForm, endDate: e.target.value})} />
+            <p style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Xe <strong>{editingCar?.name}</strong> - Biển số: {editingCar?.licensePlate}</p>
+            <form onSubmit={handleAddSchedule} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <input type="datetime-local" required value={scheduleForm.startDate} onChange={e => setScheduleForm({ ...scheduleForm, startDate: e.target.value })} />
+              <input type="datetime-local" required value={scheduleForm.endDate} onChange={e => setScheduleForm({ ...scheduleForm, endDate: e.target.value })} />
               <button className="btn-primary" type="submit">Khoá lịch</button>
             </form>
-            <div style={{maxHeight:'250px', overflowY:'auto'}}>
+            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               <table className="data-table">
                 <thead><tr><th>Từ ngày</th><th>Đến ngày</th><th>Thao tác</th></tr></thead>
                 <tbody>
-                  {currentCarSchedules.length === 0 && <tr><td colSpan="3" style={{textAlign:'center'}}>Chưa có lịch bị khóa</td></tr>}
+                  {currentCarSchedules.length === 0 && <tr><td colSpan="3" style={{ textAlign: 'center' }}>Chưa có lịch bị khóa</td></tr>}
                   {currentCarSchedules.map(s => (
                     <tr key={s.scheduleId}>
                       <td>{new Date(s.startDate).toLocaleString('vi-VN')}</td>
@@ -495,7 +580,7 @@ const OwnerDashboard = () => {
                 </tbody>
               </table>
             </div>
-            <div className="modal-actions" style={{marginTop: '20px'}}>
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
               <button type="button" className="btn-secondary" onClick={() => setShowSchedule(false)}>Đóng</button>
             </div>
           </div>
